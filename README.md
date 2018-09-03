@@ -1,7 +1,7 @@
 # CS224n Natural Language Processing with Deep Learning
 ## Lectures
 * [x] Natural Language Processing with Deep Learning
-* [ ] Word Vector Representations
+* [x] Word Vector Representations
 * [ ] Global Vectors for Word Representation
 * [ ] Word Window Classification and Neural Networks
 * [ ] Backpropagation and Project Advice
