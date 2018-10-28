@@ -2,10 +2,10 @@
 ## Lectures
 * [x] Natural Language Processing with Deep Learning
 * [x] Word Vector Representations
-* [ ] Global Vectors for Word Representation
-* [ ] Word Window Classification and Neural Networks
-* [ ] Backpropagation and Project Advice
-* [ ] Dependency Parsing
+* [x] Global Vectors for Word Representation
+* [x] Word Window Classification and Neural Networks
+* [x] Backpropagation and Project Advice
+* [x] Dependency Parsing
 * [ ] Introduction to TensorFlow
 * [ ] Recurrent Neural Networks and Language Models
 * [ ] Machine Translation and Advanced Recurrent LSTMs and GRUs
