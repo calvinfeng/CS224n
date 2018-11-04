@@ -200,7 +200,7 @@ if __name__ == '__main__':
             }
             run_metadata = tf.RunMetadata()
             _, summary, loss_val = sess.run([optimizer, merged, loss], feed_dict=feed_dict,
-                                                                          run_metadata=run_metadata)
+                                                                       run_metadata=run_metadata)
             average_loss += loss_val
             writer.add_summary(summary, step)
             if step == (num_steps - 1):
