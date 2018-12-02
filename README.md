@@ -28,4 +28,4 @@
 - http://web.stanford.edu/class/cs224n/assignment3/index.html
 
 Assignment 2 contains a data folder which is about 100MB. I am not going to commit it. The code must
-be run with actual data in `assignment2/data/` directory.
+be run with actual data in `assignment2/data/` directory. The same applies for assignment 3.
