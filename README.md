@@ -6,10 +6,10 @@
 * [x] Word Window Classification and Neural Networks
 * [x] Backpropagation and Project Advice
 * [x] Dependency Parsing
-* [ ] Introduction to TensorFlow
-* [ ] Recurrent Neural Networks and Language Models
-* [ ] Machine Translation and Advanced Recurrent LSTMs and GRUs
-* [ ] Neural Machine Translation and Models with Attention
+* [x] Introduction to TensorFlow
+* [x] Recurrent Neural Networks and Language Models
+* [x] Machine Translation and Advanced Recurrent LSTMs and GRUs
+* [x] Neural Machine Translation and Models with Attention
 * [ ] Gated Recurrent Units and Further Topics in NMT
 * [ ] End-to-End Models for Speech Processing
 * [ ] Convolutional Neural Networks
@@ -20,3 +20,12 @@
 * [ ] Tackling the Limits of Deep Learning for NLP
 
 > Human language is a discrete symbolic categorical signaling system.
+
+## Assignments
+### Source
+- http://web.stanford.edu/class/cs224n/assignment1/index.html
+- http://web.stanford.edu/class/cs224n/assignment2/index.html
+- http://web.stanford.edu/class/cs224n/assignment3/index.html
+
+Assignment 2 contains a data folder which is about 100MB. I am not going to commit it. The code must
+be run with actual data in `assignment2/data/` directory.
