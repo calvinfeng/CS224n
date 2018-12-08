@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-
 import numpy as np
 import random
+import pdb
 
 
 # First implement a gradient checker by filling in the following functions
@@ -35,11 +34,19 @@ def gradcheck_naive(f, x):
         # Make sure you call random.setstate(rndstate)
         # before calling f(x) each time. This will make it possible
         # to test cost functions with built in randomness later.
+        orig = x[ix]
+        
+        x[ix] = orig + h
+        random.setstate(rndstate)
+        fxph = f(x)[0] # xph - x plus h
+        
+        x[ix] = orig - h
+        random.setstate(rndstate)
+        fxmh = f(x)[0] # xmh - x minus h
 
-        ### YOUR CODE HERE:
-        raise NotImplementedError
-        ### END YOUR CODE
-
+        x[ix] = orig
+        numgrad = (fxph - fxmh) / (2 * h)
+        
         # Compare gradients
         reldiff = abs(numgrad - grad[ix]) / max(1, abs(numgrad), abs(grad[ix]))
         if reldiff > 1e-5:
@@ -75,9 +82,14 @@ def your_sanity_checks():
     your additional tests be graded.
     """
     print "Running your sanity checks..."
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    
+    trig = lambda x: (np.sum(np.sin(x)), np.cos(x))
+    
+    print "Running my sanity checks..."
+    gradcheck_naive(trig, np.array(123.456))
+    gradcheck_naive(trig, np.random.randn(3,))
+    gradcheck_naive(trig, np.random.randn(4,5)) 
+    print ""
 
 
 if __name__ == "__main__":
