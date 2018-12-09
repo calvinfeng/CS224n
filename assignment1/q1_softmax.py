@@ -28,6 +28,7 @@ def softmax(x):
     """
     orig_shape = x.shape
 
+    ### YOUR CODE HERE
     if len(x.shape) > 1:
         x = x - np.max(x, axis=1, keepdims=True)
         denom = np.sum(np.exp(x), axis=1, keepdims=True)
@@ -36,6 +37,7 @@ def softmax(x):
         x = x - np.max(x)
         denom = np.sum(np.exp(x))
         x = np.exp(x) / denom
+    ### END YOUR CODE
 
     assert x.shape == orig_shape
     return x
@@ -74,9 +76,11 @@ def test_softmax():
     your tests be graded.
     """
     print "Running your tests..."
+    ### YOUR CODE HERE
     test_case_1 = softmax(np.array([1, 1, 1, 1]))
     expected_1 = np.array([0.25, 0.25, 0.25, 0.25])
     assert np.allclose(test_case_1, expected_1, rtol=1e-05, atol=1e-06)
+    ### END YOUR CODE
     print "Passed!"
 
 

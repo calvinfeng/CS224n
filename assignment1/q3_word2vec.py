@@ -15,7 +15,12 @@ def normalizeRows(x):
     """
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    ### Dot Product
+    # Using dot product yield a better performance but harder to understand.
+    # x.T.dot(x) is equivalent to np.sum(x**2) 
+    get_norm = lambda x: np.sqrt(np.sum(x**2))
+    denom = np.apply_along_axis(get_norm, 1, x)
+    x /= denom[:, None]
     ### END YOUR CODE
 
     return x
@@ -42,7 +47,7 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     predicted -- numpy ndarray, predicted word vector (\hat{v} in
                  the written component)
     target -- integer, the index of the target word
-    outputVectors -- "output" vectors (as rows) for all tokens
+    outputVectors -- "output" vectors (as rows) for all tokens 
     dataset -- needed for negative sampling, unused here.
 
     Return:
@@ -56,9 +61,19 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     free to reference the code you previously wrote for this
     assignment!
     """
+    print outputVectors
+    print predicted
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    score = np.dot(outputVectors, predicted) # NOTE: outputVectors are the weight, mother fucker.
+    probs = softmax(score)
+    cost = -np.log(probs[target])
+
+    grad_score = probs.copy()
+    grad_score[target] -= 1
+
+    grad = np.outer(grad_score, predicted)
+    gradPred = np.dot(outputVectors.T, grad)
     ### END YOUR CODE
 
     return cost, gradPred, grad
@@ -96,7 +111,20 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     indices.extend(getNegativeSamples(target, dataset, K))
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    grad = np.zeros(outputVectors.shape)
+    gradPred = np.zeros(predicted.shape)
+    score = sigmoid(np.dot(outputVectors[target], predicted))
+
+    cost = -np.log(score)
+    grad[target] += predicted * (score - 1.0)
+    gradPred += outputVectors[target] * (score - 1.0)
+
+    for k in xrange(K):
+        samp = indices[k+1]
+        score = sigmoid(np.dot(outputVectors[samp], predicted))
+        cost -= np.log(1.0 - z)
+        grad[samp] += predicted * z
+        gradPred += outputVectors[samp] * z
     ### END YOUR CODE
 
     return cost, gradPred, grad
