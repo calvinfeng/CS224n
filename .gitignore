@@ -4,3 +4,4 @@ log/
 .vscode/
 assignment2/data/
 assignment3/data/
+*.pyc
