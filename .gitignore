@@ -1,7 +1,9 @@
 environment/
+env/
 log/
 .ipynb_checkpoints/
 .vscode/
+assignment1/utils/datasets/
 assignment2/data/
 assignment3/data/
 *.pyc

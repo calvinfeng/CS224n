@@ -2,24 +2,24 @@
 
 import numpy as np
 import random
+import pdb
 
 from q1_softmax import softmax
 from q2_gradcheck import gradcheck_naive
 from q2_sigmoid import sigmoid, sigmoid_grad
 
+
 def normalizeRows(x):
-    """ Row normalization function
+    """Row normalization function
 
     Implement a function that normalizes each row of a matrix to have
     unit length.
-    """
 
+    Note: Using dot product yields a better performance but harder to understand.
+    x.T.dot(x) is equivalent to np.sum(x**2).
+    """
     ### YOUR CODE HERE
-    ### Dot Product
-    # Using dot product yield a better performance but harder to understand.
-    # x.T.dot(x) is equivalent to np.sum(x**2) 
-    get_norm = lambda x: np.sqrt(np.sum(x**2))
-    denom = np.apply_along_axis(get_norm, 1, x)
+    denom = np.apply_along_axis(lambda x: np.sqrt(np.sum(x**2)), 1, x)
     x /= denom[:, None]
     ### END YOUR CODE
 
@@ -28,9 +28,9 @@ def normalizeRows(x):
 
 def test_normalize_rows():
     print "Testing normalizeRows..."
-    x = normalizeRows(np.array([[3.0,4.0],[1, 2]]))
+    x = normalizeRows(np.array([[3.0, 4.0], [1, 2]]))
     print x
-    ans = np.array([[0.6,0.8],[0.4472136,0.89442719]])
+    ans = np.array([[0.6, 0.8], [0.4472136, 0.89442719]])
     assert np.allclose(x, ans, rtol=1e-05, atol=1e-06)
     print ""
 
@@ -64,8 +64,11 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     print outputVectors
     print predicted
 
+    # outputVectors is the weight of one word in hidden layer
+    # predicted is the weight of one word in the output layer
+
     ### YOUR CODE HERE
-    score = np.dot(outputVectors, predicted) # NOTE: outputVectors are the weight, mother fucker.
+    score = np.dot(outputVectors, predicted)
     probs = softmax(score)
     cost = -np.log(probs[target])
 
@@ -73,7 +76,7 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     grad_score[target] -= 1
 
     grad = np.outer(grad_score, predicted)
-    gradPred = np.dot(outputVectors.T, grad)
+    gradPred = np.dot(outputVectors.T, grad_score)
     ### END YOUR CODE
 
     return cost, gradPred, grad
@@ -122,9 +125,9 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     for k in xrange(K):
         samp = indices[k+1]
         score = sigmoid(np.dot(outputVectors[samp], predicted))
-        cost -= np.log(1.0 - z)
-        grad[samp] += predicted * z
-        gradPred += outputVectors[samp] * z
+        cost -= np.log(1.0 - score)
+        grad[samp] += predicted * score
+        gradPred += outputVectors[samp] * score
     ### END YOUR CODE
 
     return cost, gradPred, grad
@@ -159,7 +162,18 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     gradOut = np.zeros(outputVectors.shape)
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    center_word_idx = tokens[currentWord]
+    embedding_vector = inputVectors[center_word_idx]
+
+    for j in contextWords:
+        context_word_idx = tokens[j]
+        cost_j, grad_in_c, grad_out_c = word2vecCostAndGradient(
+            embedding_vector, context_word_idx, outputVectors, dataset
+        )
+        cost += cost_j
+        gradIn[center_word_idx] += grad_in_c
+        gradOut += grad_out_c # TODO: Why isn't this gradOut[center_word_idx] += grad_out_c?
+
     ### END YOUR CODE
 
     return cost, gradIn, gradOut
@@ -183,7 +197,13 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     gradOut = np.zeros(outputVectors.shape)
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    predicted_indices = [tokens[word] for word in contextWords]
+    predicted_vectors = inputVectors[predicted_indices]
+    predicted = np.sum(predicted_vectors, axis=0)
+    target = tokens[currentWord]
+    cost, gradIn_predicted, gradOut = word2vecCostAndGradient(predicted, target, outputVectors, dataset)
+    for i in predicted_indices:
+        gradIn[i] += gradIn_predicted
     ### END YOUR CODE
 
     return cost, gradIn, gradOut
