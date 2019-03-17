@@ -7,23 +7,28 @@ def softmax(x):
     """
     Compute the softmax function in tensorflow.
 
-    You might find the tensorflow functions tf.exp, tf.reduce_max,
-    tf.reduce_sum, tf.expand_dims useful. (Many solutions are possible, so you may
-    not need to use all of these functions). Recall also that many common
-    tensorflow operations are sugared (e.g. x + y does elementwise addition
-    if x and y are both tensors). Make sure to implement the numerical stability
-    fixes as in the previous homework!
+    You might find the tensorflow functions tf.exp, tf.reduce_max, tf.reduce_sum, tf.expand_dims
+    useful. (Many solutions are possible, so you may not need to use all of these functions). Recall
+    also that many common tensorflow operations are sugared (e.g. x + y does elementwise addition if
+    x and y are both tensors). Make sure to implement the numerical stability fixes as in the
+    previous homework!
 
-    Args:
-        x:   tf.Tensor with shape (n_samples, n_features). Note feature vectors are
-                  represented by row-vectors. (For simplicity, no need to handle 1-d
-                  input as in the previous homework)
-    Returns:
-        out: tf.Tensor with shape (n_sample, n_features). You need to construct this
-                  tensor in this problem.
+    Args: 
+
+        x: tf.Tensor with shape (n_samples, n_features). Note feature vectors are represented by
+        row-vectors. (For simplicity, no need to handle 1-d input as in the previous homework)
+
+    Returns: 
+
+        out: tf.Tensor with shape (n_sample, n_features). You need to construct this tensor in
+        this asdfsf problem.
     """
-
+    #* This is a numerically stable softmax computation
     ### YOUR CODE HERE
+    max_x = tf.reduce_max(x, axis=1, keepdims=True) # Row-wise maximums
+    exp_x = tf.exp(tf.subtract(x, max_x))
+    denom = tf.reduce_sum(exp_x, axis=1) # Row-wise sums
+    out = tf.math.divide(exp_x, denom)
     ### END YOUR CODE
 
     return out
@@ -31,29 +36,30 @@ def softmax(x):
 
 def cross_entropy_loss(y, yhat):
     """
-    Compute the cross entropy loss in tensorflow.
-    The loss should be summed over the current minibatch.
+    Compute the cross entropy loss in tensorflow. The loss should be summed over the current
+    minibatch.
 
-    y is a one-hot tensor of shape (n_samples, n_classes) and yhat is a tensor
-    of shape (n_samples, n_classes). y should be of dtype tf.int32, and yhat should
-    be of dtype tf.float32.
+    y is a one-hot tensor of shape (n_samples, n_classes) and yhat is a tensor of shape (n_samples,
+    n_classes). y should be of dtype tf.int32, and yhat should be of dtype tf.float32.
 
-    The functions tf.to_float, tf.reduce_sum, and tf.log might prove useful. (Many
-    solutions are possible, so you may not need to use all of these functions).
+    The functions tf.to_float, tf.reduce_sum, and tf.log might prove useful. (Many solutions are
+    possible, so you may not need to use all of these functions).
 
-    Note: You are NOT allowed to use the tensorflow built-in cross-entropy
-                functions.
+    Note: You are NOT allowed to use the tensorflow built-in cross-entropy functions.
 
-    Args:
-        y:    tf.Tensor with shape (n_samples, n_classes). One-hot encoded.
-        yhat: tf.Tensorwith shape (n_sample, n_classes). Each row encodes a
-                    probability distribution and should sum to 1.
-    Returns:
-        out:  tf.Tensor with shape (1,) (Scalar output). You need to construct this
-                    tensor in the problem.
+    Args: 
+
+        y: tf.Tensor with shape (n_samples, n_classes). One-hot encoded. 
+
+        yhat: tf.Tensorwith shape (n_sample, n_classes). Each row encodes a probability distribution
+        and should sum to 1.
+
+        Returns: out: tf.Tensor with shape (1,) (Scalar output). You need to construct this tensor
+        in the problem.
     """
-
     ### YOUR CODE HERE
+    prod = tf.multiply(tf.cast(y, tf.float32), tf.log(yhat)) # Element-wise product
+    out = tf.negative(tf.reduce_sum(prod))
     ### END YOUR CODE
 
     return out
@@ -61,8 +67,7 @@ def cross_entropy_loss(y, yhat):
 
 def test_softmax_basic():
     """
-    Some simple tests of softmax to get you started.
-    Warning: these are not exhaustive.
+    Some simple tests of softmax to get you started. Warning: these are not exhaustive.
     """
 
     test1 = softmax(tf.constant(np.array([[1001, 1002], [3, 4]]), dtype=tf.float32))
@@ -81,8 +86,7 @@ def test_softmax_basic():
 
 def test_cross_entropy_loss_basic():
     """
-    Some simple tests of cross_entropy_loss to get you started.
-    Warning: these are not exhaustive.
+    Some simple tests of cross_entropy_loss to get you started. Warning: these are not exhaustive.
     """
     y = np.array([[0, 1], [1, 0], [1, 0]])
     yhat = np.array([[.5, .5], [.5, .5], [.5, .5]])
