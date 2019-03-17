@@ -28,82 +28,109 @@ class Config(object):
 class SoftmaxModel(Model):
     """Implements a Softmax classifier with cross-entropy loss."""
 
+    def __init__(self, config):
+        """Initializes the model.
+
+        Args:
+            config: A model configuration object of type Config
+        """
+        self.config = config
+        #* Method build is inherited from parent class Model.
+        self.build() 
+
     def add_placeholders(self):
         """Generates placeholder variables to represent the input tensors.
 
-        These placeholders are used as inputs by the rest of the model building
-        and will be fed data during training.
+        These placeholders are used as inputs by the rest of the model building and will be fed data
+        during training.
 
         Adds following nodes to the computational graph
 
-        input_placeholder: Input placeholder tensor of shape
-                                              (batch_size, n_features), type tf.float32
-        labels_placeholder: Labels placeholder tensor of shape
-                                              (batch_size, n_classes), type tf.int32
+        input_placeholder: Input placeholder tensor of shape (batch_size, n_features), type
+        tf.float32
 
-        Add these placeholders to self as the instance variables
-            self.input_placeholder
-            self.labels_placeholder
+        labels_placeholder: Labels placeholder tensor of shape (batch_size, n_classes), type
+        tf.int32
+
+        Add these placeholders to self as the instance variables self.input_placeholder
+        self.labels_placeholder
         """
         ### YOUR CODE HERE
+        #* I am omitting placeholder suffix for each ph variable. Input is (N, D) and output is
+        #* (N, C) where N is the batch size, D is the feature dimension, and C is the number of
+        #* classes.
+        self.inputs = tf.placeholder(tf.float32, [self.config.batch_size, self.config.n_features])
+        self.labels = tf.placeholder(tf.float32, [self.config.batch_size, self.config.n_classes])
         ### END YOUR CODE
 
     def create_feed_dict(self, inputs_batch, labels_batch=None):
         """Creates the feed_dict for training the given step.
 
-        A feed_dict takes the form of:
-        feed_dict = {
-                <placeholder>: <tensor of values to be passed for placeholder>,
+        A feed_dict takes the form of: feed_dict = {<placeholder>: <tensor of values to be passed
+        for placeholder>,
                 ....
         }
 
         If label_batch is None, then no labels are added to feed_dict.
 
-        Hint: The keys for the feed_dict should be the placeholder
-                tensors created in add_placeholders.
+        Hint: The keys for the feed_dict should be the placeholder tensors created in
+        add_placeholders.
 
         Args:
-            inputs_batch: A batch of input data.
-            labels_batch: A batch of label data.
+            inputs_batch: A batch of input data. labels_batch: A batch of label data.
+            
         Returns:
             feed_dict: The feed dictionary mapping from placeholders to values.
         """
         ### YOUR CODE HERE
+        feed_dict = {self.inputs: inputs_batch, self.labels: labels_batch}
         ### END YOUR CODE
         return feed_dict
 
     def add_prediction_op(self):
-        """Adds the core transformation for this model which transforms a batch of input
-        data into a batch of predictions. In this case, the transformation is a linear layer plus a
-        softmax transformation:
+        """Adds the core transformation for this model which transforms a batch of input data into a
+        batch of predictions. In this case, the transformation is a linear layer plus a softmax
+        transformation:
 
         yhat = softmax(xW + b)
 
         Hint: The input x will be passed in through self.input_placeholder. Each ROW of
-              self.input_placeholder is a single example. This is usually best-practice for
-              tensorflow code.
-        Hint: Make sure to create tf.Variables as needed.
-        Hint: For this simple use-case, it's sufficient to initialize both weights W
-                    and biases b with zeros.
+        self.input_placeholder is a single example. This is usually best-practice for tensorflow
+        code.
 
-        Returns:
+        Hint: Make sure to create tf.Variables as needed.
+
+        Hint: For this simple use-case, it's sufficient to initialize both weights W and biases b
+        with zeros.
+
+        Returns: 
             pred: A tensor of shape (batch_size, n_classes)
         """
+        #* In general I'd like to call this the Affine layer, afterall it is performing an Affine
+        #* transformation.
         ### YOUR CODE HERE
+        with tf.variable_scope("transformation"):
+            b = tf.Variable(tf.random_uniform([self.config.n_classes]))
+            W = tf.Variable(tf.random_uniform([self.config.n_features, self.config.n_classes]))
+            z = tf.matmul(self.inputs, W) + b
+        
+        pred = softmax(z)
         ### END YOUR CODE
         return pred
 
     def add_loss_op(self, pred):
         """Adds cross_entropy_loss ops to the computational graph.
 
-        Hint: Use the cross_entropy_loss function we defined. This should be a very
-                    short function.
+        Hint: Use the cross_entropy_loss function we defined. This should be a very short function.
+
         Args:
             pred: A tensor of shape (batch_size, n_classes)
+        
         Returns:
             loss: A 0-d tensor (scalar)
         """
         ### YOUR CODE HERE
+        loss = cross_entropy_loss(self.labels, pred)
         ### END YOUR CODE
         return loss
 
@@ -127,6 +154,7 @@ class SoftmaxModel(Model):
             train_op: The Op for training.
         """
         ### YOUR CODE HERE
+        train_op = tf.train.GradientDescentOptimizer(self.config.lr).minimize(loss)
         ### END YOUR CODE
         return train_op
 
@@ -165,15 +193,6 @@ class SoftmaxModel(Model):
             losses.append(average_loss)
         return losses
 
-    def __init__(self, config):
-        """Initializes the model.
-
-        Args:
-            config: A model configuration object of type Config
-        """
-        self.config = config
-        self.build()
-
 
 def test_softmax_model():
     """Train softmax model for a number of steps."""
@@ -185,8 +204,8 @@ def test_softmax_model():
     labels = np.zeros((config.n_samples, config.n_classes), dtype=np.int32)
     labels[:, 0] = 1
 
-    # Tell TensorFlow that the model will be built into the default Graph.
-    # (not required but good practice)
+    # Tell TensorFlow that the model will be built into the default Graph. (not required but good
+    # practice)
     with tf.Graph().as_default() as graph:
         # Build the model and add the variable initializer op
         model = SoftmaxModel(config)

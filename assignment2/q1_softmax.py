@@ -27,7 +27,7 @@ def softmax(x):
     ### YOUR CODE HERE
     max_x = tf.reduce_max(x, axis=1, keepdims=True) # Row-wise maximums
     exp_x = tf.exp(tf.subtract(x, max_x))
-    denom = tf.reduce_sum(exp_x, axis=1) # Row-wise sums
+    denom = tf.reduce_sum(exp_x, axis=1, keepdims=True) # Row-wise sums
     out = tf.math.divide(exp_x, denom)
     ### END YOUR CODE
 
