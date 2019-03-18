@@ -19,19 +19,40 @@ class PartialParse(object):
         """
         # The sentence being parsed is kept for bookkeeping purposes. Do not use it in your code.
         self.sentence = sentence
-
+        
+        #* Sentence might have repetiing words, actually it's better to use list to capture
+        #*  dependencies.
         ### YOUR CODE HERE
+        self.stack = ['ROOT']
+        self.buffer = sentence[:]
+        self.dependencies = [] 
         ### END YOUR CODE
 
+    def shift(self):
+        self.stack.append(self.buffer.pop(0))
+
+    def left_arc(self):
+        self.dependencies.append((self.stack[-1], self.stack[-2]))
+        self.stack.pop(-2)
+    
+    def right_arc(self):
+        self.dependencies.append((self.stack[-2], self.stack[-1]))
+        self.stack.pop(-1)
+    
     def parse_step(self, transition):
         """Performs a single parse step by applying the given transition to this partial parse
 
         Args:
             transition: A string that equals "S", "LA", or "RA" representing the shift, left-arc,
-                        and right-arc transitions. You can assume the provided transition is a legal
-                        transition.
+            and right-arc transitions. You can assume the provided transition is a legal transition.
         """
         ### YOUR CODE HERE
+        if transition == 'LA':
+            self.left_arc()
+        elif transition == 'RA':
+            self.right_arc()
+        else:
+            self.shift()
         ### END YOUR CODE
 
     def parse(self, transitions):
@@ -56,7 +77,9 @@ def minibatch_parse(sentences, model, batch_size):
         model: The model that makes parsing decisions. It is assumed to have a function
                model.predict(partial_parses) that takes in a list of PartialParses as input and
                returns a list of transitions predicted for each parse. That is, after calling
-                   transitions = model.predict(partial_parses)
+            
+               transitions = model.predict(partial_parses)
+        
                transitions[i] will be the next transition to apply to partial_parses[i].
         batch_size: The number of PartialParses to include in each minibatch
     Returns:
@@ -64,8 +87,30 @@ def minibatch_parse(sentences, model, batch_size):
                       Ordering should be the same as in sentences (i.e., dependencies[i] should
                       contain the parse for sentences[i]).
     """
-
     ### YOUR CODE HERE
+    partial_parses = [PartialParse(s) for s in sentences]
+    
+    unfinished_parses = partial_parses
+    while len(unfinished_parses) > 0:
+        minibatch = unfinished_parses[0:batch_size]
+        while len(minibatch) > 0:
+            transitions = model.predict(minibatch)
+            for index, action in enumerate(transitions):
+                minibatch[index].parse_step(action)
+            
+            # Keep processing the same minibatch until each parse is completed.
+            next_minibatch = []
+            for parse in minibatch:
+                if len(parse.stack) > 1 or len(parse.buffer) > 0:
+                    next_minibatch.append(parse)
+            
+            minibatch = next_minibatch
+            
+        unfinished_parses = unfinished_parses[batch_size:]
+    
+    dependencies = []
+    for n in range(len(partial_parses)):
+        dependencies.append(partial_parses[n].dependencies)
     ### END YOUR CODE
 
     return dependencies
