@@ -32,11 +32,11 @@ class PartialParse(object):
         self.stack.append(self.buffer.pop(0))
 
     def left_arc(self):
-        self.dependencies.append(self.stack[-1], self.stack[-2])
+        self.dependencies.append((self.stack[-1], self.stack[-2]))
         self.stack.pop(-2)
     
     def right_arc(self):
-        self.dependencies.append(self.stack[-2], self.stack[-1])
+        self.dependencies.append((self.stack[-2], self.stack[-1]))
         self.stack.pop(-1)
     
     def parse_step(self, transition):

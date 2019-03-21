@@ -1,10 +1,11 @@
-import cPickle
 import os
 import time
 import tensorflow as tf
+import cPickle
 
 from model import Model
 from q2_initialization import xavier_weight_init
+from utils.general_utils import Progbar
 from utils.parser_utils import minibatches, load_and_preprocess_data
 
 
@@ -13,17 +14,16 @@ class Config(object):
 
     The config class is used to store various hyperparameters and dataset
     information parameters. Model objects are passed a Config() object at
-    instantiation. They can then call self.config.<hyperparameter_name> to
-    get the hyperparameter settings.
+    instantiation.
     """
     n_features = 36
     n_classes = 3
-    dropout = 0.5  # (p_drop in the handout)
+    dropout = 0.5
     embed_size = 50
     hidden_size = 200
-    batch_size = 1024
+    batch_size = 2048
     n_epochs = 10
-    lr = 0.0005
+    lr = 0.001
 
 
 class ParserModel(Model):
@@ -42,7 +42,7 @@ class ParserModel(Model):
 
         Adds following nodes to the computational graph
 
-        input_placeholder: Input placeholder tensor of shape (None, n_features), type tf.int32
+        input_placeholder: Input placeholder tensor of  shape (None, n_features), type tf.int32
         labels_placeholder: Labels placeholder tensor of shape (None, n_classes), type tf.float32
         dropout_placeholder: Dropout value placeholder (scalar), type tf.float32
 
@@ -57,10 +57,9 @@ class ParserModel(Model):
         self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.n_features])
         self.labels_placeholder = tf.placeholder(tf.float32, [None, self.config.n_classes])
         self.dropout_placeholder = tf.placeholder(tf.float32)
-        self.beta = tf.placeholder(tf.float32)
         ### END YOUR CODE
 
-    def create_feed_dict(self, inputs_batch, labels_batch=None, dropout=0):
+    def create_feed_dict(self, inputs_batch, labels_batch=None, dropout=1):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -90,14 +89,13 @@ class ParserModel(Model):
 
         if labels_batch is not None:
             feed_dict[self.labels_placeholder] = labels_batch
-
         ### END YOUR CODE
         return feed_dict
 
     def add_embedding(self):
         """Adds an embedding layer that maps from input tokens (integers) to vectors and then
         concatenates those vectors:
-            - Creates a tf.Variable and initializes it with self.pretrained_embeddings.
+            - Creates an embedding tensor and initializes it with self.pretrained_embeddings.
             - Uses the input_placeholder to index into the embeddings tensor, resulting in a
               tensor of shape (None, n_features, embedding_size).
             - Concatenates the embeddings by reshaping the embeddings tensor to shape
@@ -106,14 +104,14 @@ class ParserModel(Model):
         Hint: You might find tf.nn.embedding_lookup useful.
         Hint: You can use tf.reshape to concatenate the vectors. See following link to understand
             what -1 in a shape means.
-            https://www.tensorflow.org/api_docs/python/tf/reshape
+            https://www.tensorflow.org/api_docs/python/array_ops/shapes_and_shaping#reshape.
 
         Returns:
             embeddings: tf.Tensor of shape (None, n_features*embed_size)
         """
         ### YOUR CODE HERE
         embedding_weights = tf.Variable(self.pretrained_embeddings)
-        embeddings = tf.nn.embedding_lookup(embedding_weights, self.input_placeholder)
+        embeddings = tf.nn.embedding_lookup(embedding_weights,self.input_placeholder)
         embeddings = tf.reshape(embeddings, [-1, self.config.n_features * self.config.embed_size])
         ### END YOUR CODE
         return embeddings
@@ -131,9 +129,13 @@ class ParserModel(Model):
         Use the initializer from q2_initialization.py to initialize W and U (you can initialize b1
         and b2 with zeros)
 
-        Hint: Note that tf.nn.dropout takes the keep probability (1 - p_drop) as an argument.
-              Therefore the keep probability should be set to the value of
-              (1 - self.dropout_placeholder)
+        Hint: Here are the dimensions of the various variables you will need to create
+                    W:  (n_features*embed_size, hidden_size)
+                    b1: (hidden_size,)
+                    U:  (hidden_size, n_classes)
+                    b2: (n_classes)
+        Hint: Note that tf.nn.dropout takes the keep probability (1 - p_drop) as an argument. 
+            The keep probability should be set to the value of self.dropout_placeholder
 
         Returns:
             pred: tf.Tensor of shape (batch_size, n_classes)
@@ -142,16 +144,16 @@ class ParserModel(Model):
         x = self.add_embedding()
         ### YOUR CODE HERE
         xavier = xavier_weight_init()
-        with tf.variable_scope("feedforward-parser"):
+        with tf.variable_scope("transformation"):
             W = xavier([self.config.n_features * self.config.embed_size, self.config.hidden_size])
             b1 = tf.Variable(tf.random_uniform([self.config.hidden_size,]))
             
             U = xavier([self.config.hidden_size, self.config.n_classes])
             b2 = tf.Variable(tf.random_uniform([self.config.n_classes]))
 
-            z = tf.matmul(x, W) + b1
+            z = tf.matmul(x,W) + b1
             h = tf.nn.relu(z)
-            pred = tf.matmul(tf.nn.dropout(h, self.dropout_placeholder), U) + b2
+            pred = tf.matmul(tf.nn.dropout(h,self.dropout_placeholder), U) + b2
         ### END YOUR CODE
         return pred
 
@@ -181,12 +183,11 @@ class ParserModel(Model):
         The Op returned by this function is what must be passed to the
         `sess.run()` call to cause the model to train. See
 
-        https://www.tensorflow.org/api_docs/python/tf/train/Optimizer
+        https://www.tensorflow.org/versions/r0.7/api_docs/python/train.html#Optimizer
 
         for more information.
 
         Use tf.train.AdamOptimizer for this model.
-        Use the learning rate from self.config.
         Calling optimizer.minimize() will return a train_op object.
 
         Args:
@@ -195,8 +196,8 @@ class ParserModel(Model):
             train_op: The Op for training.
         """
         ### YOUR CODE HERE
-        adam = tf.train.AdamOptimizer(self.config.lr)
-        train_op = adam.minimize(loss)
+        adam_optim = tf.train.AdamOptimizer(self.config.lr)
+        train_op = adam_optim.minimize(loss)
         ### END YOUR CODE
         return train_op
 
@@ -207,8 +208,7 @@ class ParserModel(Model):
         return loss
 
     def run_epoch(self, sess, parser, train_examples, dev_set):
-        n_minibatches = 1 + len(train_examples) / self.config.batch_size
-        prog = tf.keras.utils.Progbar(target=n_minibatches)
+        prog = Progbar(target=1 + len(train_examples) / self.config.batch_size)
         for i, (train_x, train_y) in enumerate(minibatches(train_examples, self.config.batch_size)):
             loss = self.train_on_batch(sess, train_x, train_y)
             prog.update(i + 1, [("train loss", loss)])
@@ -245,40 +245,43 @@ def main(debug=True):
     if not os.path.exists('./data/weights/'):
         os.makedirs('./data/weights/')
 
-    with tf.Graph().as_default() as graph:
+    with tf.Graph().as_default():
         print "Building model...",
         start = time.time()
         model = ParserModel(config, embeddings)
         parser.model = model
-        init_op = tf.global_variables_initializer()
-        saver = None if debug else tf.train.Saver()
         print "took {:.2f} seconds\n".format(time.time() - start)
-    graph.finalize()
 
-    with tf.Session(graph=graph) as session:
-        parser.session = session
-        session.run(init_op)
+        init = tf.global_variables_initializer()
+        # If you are using an old version of TensorFlow, you may have to use
+        # this initializer instead.
+        # init = tf.initialize_all_variables()
+        saver = None if debug else tf.train.Saver()
 
-        print 80 * "="
-        print "TRAINING"
-        print 80 * "="
-        model.fit(session, saver, parser, train_examples, dev_set)
+        with tf.Session() as session:
+            parser.session = session
+            session.run(init)
 
-        if not debug:
             print 80 * "="
-            print "TESTING"
+            print "TRAINING"
             print 80 * "="
-            print "Restoring the best model weights found on the dev set"
-            saver.restore(session, './data/weights/parser.weights')
-            print "Final evaluation on test set",
-            UAS, dependencies = parser.parse(test_set)
-            print "- test UAS: {:.2f}".format(UAS * 100.0)
-            print "Writing predictions"
-            with open('q2_test.predicted.pkl', 'w') as f:
-                cPickle.dump(dependencies, f, -1)
-            print "Done!"
+            model.fit(session, saver, parser, train_examples, dev_set)
+
+            if not debug:
+                print 80 * "="
+                print "TESTING"
+                print 80 * "="
+                print "Restoring the best model weights found on the dev set"
+                saver.restore(session, './data/weights/parser.weights')
+                print "Final evaluation on test set",
+                UAS, dependencies = parser.parse(test_set)
+                print "- test UAS: {:.2f}".format(UAS * 100.0)
+                print "Writing predictions"
+                with open('q2_test.predicted.pkl', 'w') as f:
+                    cPickle.dump(dependencies, f, -1)
+                print "Done!"
 
 
 if __name__ == '__main__':
-    main()
+    main(False)
 
