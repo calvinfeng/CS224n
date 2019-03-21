@@ -113,9 +113,29 @@ Return dependencies for each parse in partial_parses
 
 ### 2f
 
+Expected value is simply,
+
+$$
+P_{drop} * 0 + (1 - P_{drop}) * 1 * \gamma h_{i} = (1 - P_{drop})\gamma h_{i} = h_{i}
+$$
+
+Then,
+
+$$
+\gamma = \frac{1}{1 - P_{drop}}
+$$
+
 ### 2g
 
+The momentum prevents the gradient direction from bouncing around as it moves toward a local
+optimum.
+
+The parameters with the smallest graidents will get the larger updates. This will move the gradient
+off a flat plateaus region.
+
 ### 2h
+
+`q2_parser_model.py`
 
 ## 3. Recurrent Neural Netowkrs: Language Modeling
 

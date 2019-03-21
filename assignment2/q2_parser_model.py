@@ -42,7 +42,7 @@ class ParserModel(Model):
 
         Adds following nodes to the computational graph
 
-        input_placeholder: Input placeholder tensor of  shape (None, n_features), type tf.int32
+        input_placeholder: Input placeholder tensor of shape (None, n_features), type tf.int32
         labels_placeholder: Labels placeholder tensor of shape (None, n_classes), type tf.float32
         dropout_placeholder: Dropout value placeholder (scalar), type tf.float32
 
@@ -54,6 +54,10 @@ class ParserModel(Model):
         (Don't change the variable names)
         """
         ### YOUR CODE HERE
+        self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.n_features])
+        self.labels_placeholder = tf.placeholder(tf.float32, [None, self.config.n_classes])
+        self.dropout_placeholder = tf.placeholder(tf.float32)
+        self.beta = tf.placeholder(tf.float32)
         ### END YOUR CODE
 
     def create_feed_dict(self, inputs_batch, labels_batch=None, dropout=0):
@@ -79,6 +83,14 @@ class ParserModel(Model):
             feed_dict: The feed dictionary mapping from placeholders to values.
         """
         ### YOUR CODE HERE
+        feed_dict = {
+            self.input_placeholder: inputs_batch,
+            self.dropout_placeholder: dropout
+        }
+
+        if labels_batch is not None:
+            feed_dict[self.labels_placeholder] = labels_batch
+
         ### END YOUR CODE
         return feed_dict
 
@@ -100,6 +112,9 @@ class ParserModel(Model):
             embeddings: tf.Tensor of shape (None, n_features*embed_size)
         """
         ### YOUR CODE HERE
+        embedding_weights = tf.Variable(self.pretrained_embeddings)
+        embeddings = tf.nn.embedding_lookup(embedding_weights, self.input_placeholder)
+        embeddings = tf.reshape(embeddings, [-1, self.config.n_features * self.config.embed_size])
         ### END YOUR CODE
         return embeddings
 
@@ -126,6 +141,17 @@ class ParserModel(Model):
 
         x = self.add_embedding()
         ### YOUR CODE HERE
+        xavier = xavier_weight_init()
+        with tf.variable_scope("feedforward-parser"):
+            W = xavier([self.config.n_features * self.config.embed_size, self.config.hidden_size])
+            b1 = tf.Variable(tf.random_uniform([self.config.hidden_size,]))
+            
+            U = xavier([self.config.hidden_size, self.config.n_classes])
+            b2 = tf.Variable(tf.random_uniform([self.config.n_classes]))
+
+            z = tf.matmul(x, W) + b1
+            h = tf.nn.relu(z)
+            pred = tf.matmul(tf.nn.dropout(h, self.dropout_placeholder), U) + b2
         ### END YOUR CODE
         return pred
 
@@ -143,6 +169,8 @@ class ParserModel(Model):
             loss: A 0-d tensor (scalar)
         """
         ### YOUR CODE HERE
+        loss = tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=self.labels_placeholder)
+        loss = tf.reduce_mean(loss)
         ### END YOUR CODE
         return loss
 
@@ -167,6 +195,8 @@ class ParserModel(Model):
             train_op: The Op for training.
         """
         ### YOUR CODE HERE
+        adam = tf.train.AdamOptimizer(self.config.lr)
+        train_op = adam.minimize(loss)
         ### END YOUR CODE
         return train_op
 
@@ -181,7 +211,7 @@ class ParserModel(Model):
         prog = tf.keras.utils.Progbar(target=n_minibatches)
         for i, (train_x, train_y) in enumerate(minibatches(train_examples, self.config.batch_size)):
             loss = self.train_on_batch(sess, train_x, train_y)
-            prog.update(i + 1, [("train loss", loss)], force=i + 1 == n_minibatches)
+            prog.update(i + 1, [("train loss", loss)])
 
         print "Evaluating on dev set",
         dev_UAS, _ = parser.parse(dev_set)
