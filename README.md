@@ -1,5 +1,7 @@
 # CS224n Natural Language Processing with Deep Learning
+
 ## Lectures
+
 * [x] Natural Language Processing with Deep Learning
 * [x] Word Vector Representations
 * [x] Global Vectors for Word Representation
@@ -10,9 +12,9 @@
 * [x] Recurrent Neural Networks and Language Models
 * [x] Machine Translation and Advanced Recurrent LSTMs and GRUs
 * [x] Neural Machine Translation and Models with Attention
-* [ ] Gated Recurrent Units and Further Topics in NMT
-* [ ] End-to-End Models for Speech Processing
-* [ ] Convolutional Neural Networks
+* [x] Gated Recurrent Units and Further Topics in NMT
+* [x] End-to-End Models for Speech Processing
+* [x] Convolutional Neural Networks
 * [ ] Tree Recursive Neural Networks and Constituency Parsing
 * [ ] Coreference Resolution
 * [ ] Dynamic Neural Networks for Question Answering
@@ -22,7 +24,23 @@
 > Human language is a discrete symbolic categorical signaling system.
 
 ## Assignments
-### Source
+
+* [x] Assignment 1
+    * [x] Softmax
+    * [x] Neural Network Basics
+    * [x] word2vec
+    * [x] Sentiment Analysis
+* [x] Assignment 2
+    * [x] Tensorflow Softmax
+    * [x] Neural Transition-Based Dependency Parsing
+    * [x] Recurrent Neural Networks (Math Derivations)
+* [ ] Assignment 3
+    * [ ] A window into NER
+    * [ ] Recurrent Neural Networks for NER
+    * [ ] Rooving with GRUs
+
+### Sources
+
 - http://web.stanford.edu/class/cs224n/assignment1/index.html
 - http://web.stanford.edu/class/cs224n/assignment2/index.html
 - http://web.stanford.edu/class/cs224n/assignment3/index.html

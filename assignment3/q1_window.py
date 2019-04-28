@@ -19,11 +19,12 @@ from util import print_sentence, write_conll
 from data_util import load_and_preprocess_data, load_embeddings, read_conll, ModelHelper
 from ner_model import NERModel
 from defs import LBLS
-#from report import Report
 
+# from report import Report
 logger = logging.getLogger("hw3.q1")
 logger.setLevel(logging.DEBUG)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
 
 class Config:
     """Holds model hyperparams and data information.
@@ -34,10 +35,10 @@ class Config:
 
     TODO: Fill in what n_window_features should be, using n_word_features and window_size.
     """
-    n_word_features = 2 # Number of features for every word in the input.
-    window_size = 1 # The size of the window to use.
+    n_word_features = 2  # Number of features for every word in the input.
+    window_size = 1  # The size of the window to use.
     ### YOUR CODE HERE
-    n_window_features = 0 # The total number of features used for each window.
+    n_window_features = (2 * window_size + 1) * n_word_features  # The total number of features used for each window.
     ### END YOUR CODE
     n_classes = 5
     dropout = 0.5
@@ -59,7 +60,7 @@ class Config:
         self.conll_output = self.output_path + "window_predictions.conll"
 
 
-def make_windowed_data(data, start, end, window_size = 1):
+def make_windowed_data(data, start, end, window_size=1):
     """Uses the input sequences in @data to construct new windowed data points.
 
     TODO: In the code below, construct a window from each word in the
@@ -82,24 +83,44 @@ def make_windowed_data(data, start, end, window_size = 1):
             end of the sentence.
         window_size: the length of the window to construct.
     Returns:
-        a new list of data points, corresponding to each window in the
-        sentence. Each data point consists of a list of
-        @n_window_features features (corresponding to words from the
-        window) to be used in the sentence and its NER label.
-        If start=[5,8] and end=[6,8], the above example should return
+        a new list of data points    predictions = sess.run(tf.argmax(self.pred, axis=1), feed_dict=feed)
+ponding to each window in the
+        sentence. Each data point    predictions = sess.run(tf.argmax(self.pred, axis=1), feed_dict=feed)
+s of a list of
+        @n_window_features featur    predictions = sess.run(tf.argmax(self.pred, axis=1), feed_dict=feed)
+esponding to words from the
+        window) to be used in the    predictions = sess.run(tf.argmax(self.pred, axis=1), feed_dict=feed)
+e and its NER label.
+        If start=[5,8] and end=[6    predictions = sess.run(tf.argmax(self.pred, axis=1), feed_dict=feed)
+ above example should return
         the list
-        [([5, 8, 1, 9, 2, 9], 1),
+        [([5, 8, 1, 9, 2, 9], 1),    predictions = sess.run(tf.argmax(self.pred, axis=1), feed_dict=feed)
+
          ([1, 9, 2, 9, 3, 8], 1),
          ...
          ]
     """
-
     windowed_data = []
     for sentence, labels in data:
-		### YOUR CODE HERE (5-20 lines)
+        ### YOUR CODE HERE (5-20 lines)
+        n = len(sentence)
 
-		### END YOUR CODE
+        # Expand the sentence by adding start and end token in front and rear.
+        sentence = [start] * window_size + sentence + [end] * window_size
+
+        label_idx = 0
+        for i in range(window_size, window_size + n):
+            word_features = []
+            for j in range(i - window_size, i + window_size + 1):
+                word_features.extend(sentence[j])
+
+            # Add word features and labels as a tuple to the final data.
+            windowed_data.append((word_features, labels[label_idx]))
+            label_idx += 1
+
+        ### END YOUR CODE
     return windowed_data
+
 
 class WindowModel(NERModel):
     """
@@ -130,7 +151,9 @@ class WindowModel(NERModel):
         (Don't change the variable names)
         """
         ### YOUR CODE HERE (~3-5 lines)
-
+        self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.n_window_features])
+        self.labels_placeholder = tf.placeholder(tf.int32, [None, ])
+        self.dropout_placeholder = tf.placeholder(tf.float32)
         ### END YOUR CODE
 
     def create_feed_dict(self, inputs_batch, labels_batch=None, dropout=1):
@@ -153,7 +176,13 @@ class WindowModel(NERModel):
             feed_dict: The feed dictionary mapping from placeholders to values.
         """
         ### YOUR CODE HERE (~5-10 lines)
-         
+        feed_dict = {
+            self.input_placeholder: inputs_batch,
+            self.dropout_placeholder: dropout
+        }
+
+        if labels_batch is not None:
+            feed_dict[self.labels_placeholder] = labels_batch
         ### END YOUR CODE
         return feed_dict
 
@@ -171,12 +200,12 @@ class WindowModel(NERModel):
             what -1 in a shape means.
             https://www.tensorflow.org/api_docs/python/array_ops/shapes_and_shaping#reshape.
         Returns:
-            embeddings: tf.Tensor of shape (None, n_window_features*embed_size)
+            embeddings: tf.Tensor of shape (None, n_window_features*embed_size)dropout_rate
         """
         ### YOUR CODE HERE (!3-5 lines)
-                                                             
-                                  
-                                                                                                                 
+        embedding_weights = tf.Variable(self.pretrained_embeddings)
+        embeddings = tf.nn.embedding_lookup(embedding_weights, self.input_placeholder)
+        embeddings = tf.reshape(embeddings, [-1, self.config.n_window_features * self.config.embed_size])
         ### END YOUR CODE
         return embeddings
 
@@ -203,10 +232,27 @@ class WindowModel(NERModel):
         Returns:
             pred: tf.Tensor of shape (batch_size, n_classes)
         """
-
         x = self.add_embedding()
         dropout_rate = self.dropout_placeholder
+
         ### YOUR CODE HERE (~10-20 lines)
+        b1 = tf.get_variable(name='b1',
+                             shape=[self.config.hidden_size, ],
+                             initializer=tf.contrib.layers.xavier_initializer(seed=1))
+        b2 = tf.get_variable(name='b2',
+                             shape=[self.config.n_classes],
+                             initializer=tf.contrib.layers.xavier_initializer(seed=2))
+        W = tf.get_variable(name='W',
+                            shape=[self.config.n_window_features * self.config.embed_size, self.config.hidden_size],
+                            initializer=tf.contrib.layers.xavier_initializer(seed=3))
+        U = tf.get_variable(name='U',
+                            shape=[self.config.hidden_size, self.config.n_classes],
+                            initializer=tf.contrib.layers.xavier_initializer(seed=4))
+
+        z = tf.matmul(x, W) + b1
+        h = tf.nn.relu(z)
+        h_dropout = tf.nn.dropout(h, dropout_rate)
+        pred = tf.matmul(h_dropout, U) + b2
 
         ### END YOUR CODE
         return pred
@@ -224,9 +270,12 @@ class WindowModel(NERModel):
         Returns:
             loss: A 0-d tensor (scalar)
         """
+
         ### YOUR CODE HERE (~2-5 lines)
-                                   
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pred, labels=self.labels_placeholder)
+        loss = tf.reduce_mean(loss)
         ### END YOUR CODE
+
         return loss
 
     def add_training_op(self, loss):
@@ -249,8 +298,10 @@ class WindowModel(NERModel):
             train_op: The Op for training.
         """
         ### YOUR CODE HERE (~1-2 lines)
-
+        adam = tf.train.AdamOptimizer(self.config.lr)
+        train_op = adam.minimize(loss)
         ### END YOUR CODE
+
         return train_op
 
     def preprocess_sequence_data(self, examples):
@@ -260,10 +311,10 @@ class WindowModel(NERModel):
         """Batch the predictions into groups of sentence length.
         """
         ret = []
-        #pdb.set_trace()
+        # pdb.set_trace()
         i = 0
         for sentence, labels in examples_raw:
-            labels_ = preds[i:i+len(sentence)]
+            labels_ = preds[i:i + len(sentence)]
             i += len(sentence)
             ret.append([sentence, labels, labels_])
         return ret
@@ -300,23 +351,25 @@ class WindowModel(NERModel):
 
 
 def test_make_windowed_data():
-    sentences = [[[1,1], [2,0], [3,3]]]
+    sentences = [[[1, 1], [2, 0], [3, 3]]]
     sentence_labels = [[1, 2, 3]]
     data = zip(sentences, sentence_labels)
-    w_data = make_windowed_data(data, start=[5,0], end=[6,0], window_size=1)
+    w_data = make_windowed_data(data, start=[5, 0], end=[6, 0], window_size=1)
 
     assert len(w_data) == sum(len(sentence) for sentence in sentences)
 
     assert w_data == [
-        ([5,0] + [1,1] + [2,0], 1,),
-        ([1,1] + [2,0] + [3,3], 2,),
-        ([2,0] + [3,3] + [6,0], 3,),
-        ]
+        ([5, 0] + [1, 1] + [2, 0], 1,),
+        ([1, 1] + [2, 0] + [3, 3], 2,),
+        ([2, 0] + [3, 3] + [6, 0], 3,),
+    ]
+
 
 def do_test1(_):
     logger.info("Testing make_windowed_data")
     test_make_windowed_data()
     logger.info("Passed!")
+
 
 def do_test2(args):
     logger.info("Testing implementation of WindowModel")
@@ -341,6 +394,7 @@ def do_test2(args):
     logger.info("Model did not crash!")
     logger.info("Passed!")
 
+
 def do_train(args):
     # Set up some parameters.
     config = Config()
@@ -354,7 +408,7 @@ def do_train(args):
     handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s: %(message)s'))
     logging.getLogger().addHandler(handler)
 
-    report = None #Report(Config.eval_output)
+    report = None  # Report(Config.eval_output)
 
     with tf.Graph().as_default():
         logger.info("Building model...",)
@@ -384,6 +438,7 @@ def do_train(args):
                     for sentence, labels, predictions in output:
                         print_sentence(f, sentence, labels, predictions)
 
+
 def do_evaluate(args):
     config = Config(args.model_path)
     helper = ModelHelper.load(args.model_path)
@@ -407,6 +462,7 @@ def do_evaluate(args):
             for sentence, labels, predictions in model.output(session, input_data):
                 predictions = [LBLS[l] for l in predictions]
                 print_sentence(args.output, sentence, labels, predictions)
+
 
 def do_shell(args):
     config = Config(args.model_path)
@@ -443,6 +499,7 @@ input> Germany 's representative to the European Union 's veterinary committee .
                 except EOFError:
                     print("Closing session.")
                     break
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Trains and tests an NER model')
