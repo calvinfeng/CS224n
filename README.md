@@ -34,10 +34,10 @@
     * [x] Tensorflow Softmax
     * [x] Neural Transition-Based Dependency Parsing
     * [x] Recurrent Neural Networks (Math Derivations)
-* [ ] Assignment 3
-    * [ ] A window into NER
-    * [ ] Recurrent Neural Networks for NER
-    * [ ] Rooving with GRUs
+* [x] Assignment 3
+    * [x] A window into NER
+    * [x] Recurrent Neural Networks for NER
+    * [x] Rooving with GRUs
 
 ### Sources
 
@@ -45,5 +45,6 @@
 - http://web.stanford.edu/class/cs224n/assignment2/index.html
 - http://web.stanford.edu/class/cs224n/assignment3/index.html
 
-Assignment 2 contains a data folder which is about 100MB. I am not going to commit it. The code must
-be run with actual data in `assignment2/data/` directory. The same applies for assignment 3.
+Assignment 2 contains a data folder which is about 100MB. I am not going to
+commit it. The code must be run with actual data in `assignment2/data/`
+directory. The same applies for assignment 3.

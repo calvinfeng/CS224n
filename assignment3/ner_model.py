@@ -3,10 +3,9 @@
 """
 A model for named entity recognition.
 """
-# import pdb
-
 import logging
-import tensorflow as tf
+# import pdb
+# import tensorflow as tf
 
 from util import ConfusionMatrix, Progbar, minibatches
 from data_util import get_chunks
@@ -94,7 +93,7 @@ class NERModel(Model):
     def fit(self, sess, saver, train_examples_raw, dev_set_raw):
         best_score = 0.
 
-        train_examples = self.preprocess_sequence_data(train_examples_raw)
+        # train_examples = self.preprocess_sequence_data(train_examples_raw)
         dev_set = self.preprocess_sequence_data(dev_set_raw)
 
         for epoch in range(self.config.n_epochs):
@@ -102,11 +101,11 @@ class NERModel(Model):
             # You may use the progress bar to monitor the training progress
             # Addition of progress bar will not be graded, but may help when debugging
 
-            prog = Progbar(target=1 + int(len(train_examples) / self.config.batch_size))
+            # prog = Progbar(target=1 + int(len(train_examples) / self.config.batch_size))
 
-		    # The general idea is to loop over minibatches from train_examples, and run train_on_batch inside the loop
-			# Hint: train_examples could be a list containing the feature data and label data
-			# Read the doc for utils.get_minibatches to find out how to use it.
+            # The general idea is to loop over minibatches from train_examples, and run train_on_batch inside the loop
+            # Hint: train_examples could be a list containing the feature data and label data
+            # Read the doc for utils.get_minibatches to find out how to use it.
             # Note that get_minibatches could either return a list, or a list of list
             # [features, labels]. This makes expanding tuples into arguments (* operator) handy
 
