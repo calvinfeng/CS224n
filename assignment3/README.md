@@ -182,17 +182,20 @@ Identify the values of `w_h, u_h, b_h` for an RNN cell that would allow it to
 replicate the behavior above.
 
 ```python
-h[t] = sigmoid(x[t].dot(u_h + h[t-1].dot(w_h) + b_h)
+h[t] = sigmoid(x[t].dot(u_h) + h[t-1].dot(w_h) + b_h)
 ```
 
 There are four potential cases.
 
 - `h[t-1] = 0` and `x[t] = 0`, we want `h[t] = 0`.
   - `sigmoid(b_h) = 0` therefore, `b_h <= 0`
+
 - `h[t-1] = 0` and `x[t] = 1`, we want `h[t] = 1`.
   - `sigmoid(u_h + b_h) = 1` therefore, `u_h + b_h > 0`
+
 - `h[t-1] = 1` and `x[t] = 0`, we want `h[t] = 1`.
   - `sigmoid(w_h + b_h) = 1` therefore, `w_h + b_h > 0`
+
 - `h[t-1] = 1` and `x[t] = 1`, we want `h[t] = 1`.
   - `sigmoid(w_h + u_h + b_h) = 1` therefore, `w_h + u_h + b_h > 0`
 
@@ -200,14 +203,96 @@ We have four equations, and 3 unknowns. We can solve this easily.
 
 #### GRU
 
-Suppose that `w_r = u_r = b_r = b_z = 0` for GRU cell, then we can simplify
+Suppose that `w_r = u_r = b_r = b_z = b_h = 0` for GRU cell, then we can simplify
 the equations to be the following.
 
-$$
-W_{h} = \frac{1}{2} X_{t}
-$$
+```python
+z[t] = sigmoid(x[t].dot(u_z) + h[t-1].dot(w_z))
+r[t] = 0
+h_hat[t] = tanh(x[t].dot(u_h))
+h[t] = z[t] * h[t-1] + (1 - z[t]) * h_hat[t]
+```
+
+- `h[t-1] = 0` and `x[t] = 0`, we want `h[t] = 0`.
+  - `z[t] = h_hat[t] = h[t] = 0`
+
+- `h[t-1] = 0` and `x[t] = 1`, we want `h[t] = 1`.
+  - `h[t] = (1 - sigmoid(u_z)) * tanh(u_h) = 1` therefore, `u_z <= 0` and `u_h > 0`
+
+- `h[t-1] = 1` and `x[t] = 0`, we want `h[t] = 1`.
+  - `h[t] = sigmoid(w_z) = 1` therefore, `w_z > 0` 
+
+- `h[t-1] = 1` and `x[t] = 1`, we want `h[t] = 1`.
+  - `h[t] = sigmoid(u_z + w_z) + (1 - sigmoid(u_z + w_z)) * tanh(u_h) = 1` therefore, 
+    `u_z + w_z > 0` or `u_z + w_z <= 0` and `w_h` can be anything. 
+
+Finally, we can conclude that `w_z > 0`, `w_h` can be anything, `u_z <= 0` and
+`u_h > 0`.
 
 ### 3b Modeling Toggling Behavior
+
+Suppose we are given a sequence, we want to produce a sequence that whenever it
+sees 1, it switches all the following digits to 1 and when it sees 1 again, it
+switches all the following digits to 0. This is like a toggle. Input `100100`
+should produce `111000`. 
+
+#### RNN
+
+If the input is 0, the state will maintain its value, i.e. no toggling behavior.
+The required condition would be the following.
+
+- if `x[t] == 0`, `0 * w_h + 0 * u_h + b_h <= 0`
+- if `x[t] == 1`, `1 * w_h + 0 * u_h + b_h > 0`
+
+Therefore, `w_h` must be positive because `b_h` must be negative.
+
+If the input is 1, the cell needs to flip state from 0 to 1 and when see 1
+again, the cell needs to flip state from 1 back to 0. The required condition
+would be the following.
+
+- if `x[t] == 0` and `h[t] == 1`, `0 * w_h + 1 * u_h + b_h > 0`
+- if `x[t] == 1` and `h[t] == 1`, `1 * w_h + 1 * u_h + b_h <= 0`
+
+We can conclude that `w_h <= -u_h - b_h == w_h <= -(u_h + b_h) < 0`, which means
+`w_h` must be negative. This is contradicting with the statement above. 
+
+#### GRU
+
+Let `w_r = u_r = b_z = b_h = 0`, what are the values of `b_r`, `w_z`, `w_h`, `u_z`
+and `u_h` to perform the toggling behavior in GRU? 
+
+We can do simple algebra again to confirm this. There are 5 unknowns and 4 
+conditions. We have to manually pick one to be some random arbitrary number.
+Let's say `b_r` is 1 to make our lives easier.
+
+**Case 1**
+
+`h[t-1] = x[t] = 1` and `h[t] = 0`
+
+`sigmoid(u_z + w_z) + tanh(u_h + w_h)  <= sigmoid(u_z + w_z) * tanh(u_h + w_h)`
+
+**Case 2**
+
+`h[t-1] = h[t] = 1` and `x[t] = 0`
+
+`sigmoid(w_z) + tanh(w_h) > sigmoid(w_z) * tanh(w_h)`
+
+**Case 3**
+
+`x[t] = h[t] = 1` and `h[t-1] = 0`
+
+`sigmoid(u_z) + tanh(u_h) > sigmoid(u_z) * tanh(u_h)`
+
+**Case 4**
+
+`x[t] = h[t] = h[t-1] = 0`
+
+Everything is zero. 0 <= 0
+
+Now we can try random numbers to satisfy these conditions. For example,
+
+- `u_z = = u_h = b_r = 1`
+- `w_z = w_h = -1`
 
 ### 3c Implement GRU Cell
 
