@@ -66,7 +66,25 @@ class GRUCell(tf.nn.rnn_cell.RNNCell):
         # be defined elsewhere!
         with tf.variable_scope(scope):
             ### YOUR CODE HERE (~20-30 lines)
-            pass
+            xavier = tf.contrib.layers.xavier_initializer(uniform=True) # set to False for gradient clipping
+
+            # get_variable function has the signature (name, shape, dtype, initializer)
+            w_z = tf.get_variable('W_z', [self.input_size, self.state_size], tf.float32, xavier)
+            u_z = tf.get_variable('U_z', [self.state_size, self.state_size], tf.float32, xavier)
+            b_z = tf.get_variable('b_z', [self.state_size, ], tf.float32, tf.constant_initializer(0))
+
+            w_r = tf.get_variable('W_r', [self.input_size, self.state_size], tf.float32, xavier)
+            u_r = tf.get_variable('U_r', [self.state_size, self.state_size], tf.float32, xavier)
+            b_r = tf.get_variable('b_r', [self.state_size, ], tf.float32, tf.constant_initializer(0))
+
+            w_o = tf.get_variable('W_o', [self.input_size, self.state_size], tf.float32, xavier)
+            u_o = tf.get_variable('U_o', [self.state_size, self.state_size], tf.float32, xavier)
+            b_o = tf.get_variable('b_o', [self.state_size, ], tf.float32, tf.constant_initializer(0))
+
+            z_t = tf.sigmoid(tf.matmul(inputs, w_z) + tf.matmul(state, u_z) + b_z)
+            r_t = tf.sigmoid(tf.matmul(inputs, w_r) + tf.matmul(state, u_r) + b_r)
+            o_t = tf.tanh(tf.matmul(inputs, w_o) + tf.matmul(r_t * state, u_o) + b_o)
+            new_state = z_t * state + (1 - z_t) * o_t
             ### END YOUR CODE ###
         # For a GRU, the output and state are the same (N.B. this isn't true
         # for an LSTM, though we aren't using one of those in our
@@ -74,22 +92,23 @@ class GRUCell(tf.nn.rnn_cell.RNNCell):
         output = new_state
         return output, new_state
 
+
 def test_gru_cell():
     with tf.Graph().as_default():
         with tf.variable_scope("test_gru_cell"):
-            x_placeholder = tf.placeholder(tf.float32, shape=(None,3))
-            h_placeholder = tf.placeholder(tf.float32, shape=(None,2))
+            x_placeholder = tf.placeholder(tf.float32, shape=(None, 3))
+            h_placeholder = tf.placeholder(tf.float32, shape=(None, 2))
 
             with tf.variable_scope("gru"):
-                tf.get_variable("W_r", initializer=np.array(np.eye(3,2), dtype=np.float32))
-                tf.get_variable("U_r", initializer=np.array(np.eye(2,2), dtype=np.float32))
-                tf.get_variable("b_r",  initializer=np.array(np.ones(2), dtype=np.float32))
-                tf.get_variable("W_z", initializer=np.array(np.eye(3,2), dtype=np.float32))
-                tf.get_variable("U_z", initializer=np.array(np.eye(2,2), dtype=np.float32))
-                tf.get_variable("b_z",  initializer=np.array(np.ones(2), dtype=np.float32))
-                tf.get_variable("W_o", initializer=np.array(np.eye(3,2), dtype=np.float32))
-                tf.get_variable("U_o", initializer=np.array(np.eye(2,2), dtype=np.float32))
-                tf.get_variable("b_o",  initializer=np.array(np.ones(2), dtype=np.float32))
+                tf.get_variable("W_r", initializer=np.array(np.eye(3, 2), dtype=np.float32))
+                tf.get_variable("U_r", initializer=np.array(np.eye(2, 2), dtype=np.float32))
+                tf.get_variable("b_r", initializer=np.array(np.ones(2), dtype=np.float32))
+                tf.get_variable("W_z", initializer=np.array(np.eye(3, 2), dtype=np.float32))
+                tf.get_variable("U_z", initializer=np.array(np.eye(2, 2), dtype=np.float32))
+                tf.get_variable("b_z", initializer=np.array(np.ones(2), dtype=np.float32))
+                tf.get_variable("W_o", initializer=np.array(np.eye(3, 2), dtype=np.float32))
+                tf.get_variable("U_o", initializer=np.array(np.eye(2, 2), dtype=np.float32))
+                tf.get_variable("b_o", initializer=np.array(np.ones(2), dtype=np.float32))
 
             tf.get_variable_scope().reuse_variables()
             cell = GRUCell(3, 2)
@@ -105,7 +124,7 @@ def test_gru_cell():
                     [0.2, 0.5],
                     [-0.3, -0.3]], dtype=np.float32)
                 y = np.array([
-                    [ 0.320, 0.555],
+                    [0.320, 0.555],
                     [-0.006, 0.020]], dtype=np.float32)
                 ht = y
 
@@ -116,10 +135,12 @@ def test_gru_cell():
                 assert np.allclose(y_, ht_), "output and state should be equal."
                 assert np.allclose(ht, ht_, atol=1e-2), "new state vector does not seem to be correct."
 
+
 def do_test(_):
     logger.info("Testing gru_cell")
     test_gru_cell()
     logger.info("Passed!")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Tests the GRU cell implemented as part of Q3 of Homework 3')
